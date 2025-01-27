@@ -17,7 +17,7 @@ snapshot_download(
     local_dir = folder_name
 )
 
-def process_video(video_path, prompt, num_steps):
+def process_video(video_path, prompt, num_steps, degradation_level):
     
     output_folder="noise_warp_output_folder"
     if os.path.exists(output_folder):
@@ -25,7 +25,6 @@ def process_video(video_path, prompt, num_steps):
         shutil.rmtree(output_folder)
     output_video="output.mp4"
     device="cuda"
-    num_steps=num_steps
     
     try:
         # Step 1: Warp the noise
@@ -41,6 +40,7 @@ def process_video(video_path, prompt, num_steps):
         inference_command = [
             "python", "cut_and_drag_inference.py", output_folder,
             "--prompt", prompt,
+            "--degradation", degradation_level,
             "--output_mp4_path", output_video,
             "--device", device,
             "--num_inference_steps", str(num_steps)
@@ -70,23 +70,34 @@ with gr.Blocks() as demo:
             <a href="https://huggingface.co/spaces/fffiloni/Go-With-The-Flow?duplicate=true">
                 <img src="https://huggingface.co/datasets/huggingface/badges/resolve/main/duplicate-this-space-sm.svg" alt="Duplicate this Space">
             </a>
-            <a href="https://huggingface.co/fffiloni">
-                <img src="https://huggingface.co/datasets/huggingface/badges/resolve/main/follow-me-on-HF-sm-dark.svg" alt="Follow me on HF">
-            </a>
         </div>
         """)
         with gr.Row():
             with gr.Column():
                 input_video = gr.Video(label="Input Video")
                 prompt = gr.Textbox(label="Prompt")
-                num_steps = gr.Slider(label="Inference Steps", minimum=1, maximum=30, value=5, step=1)
+                with gr.Row():
+                    num_steps = gr.Slider(label="Inference Steps", minimum=1, maximum=30, value=5, step=1)
+                    degradation = gr.Slider(label="Noise Degradation", minimum=0, maximum=1, value=0, step=0.1)
                 submit_btn = gr.Button("Submit")
+                gr.Examples(
+                    examples = [
+                        ["./examples/example_1.mp4", "yellow plastic dick is swimming and jumping in the water"],
+                        ["./examples/example_2.mp4", "the car starts and go forward to the end of the street"]
+                    ], 
+                    inputs = [input_video, prompt]
+                )
             with gr.Column():
                 output_video = gr.Video(label="Result")
+                gr.HTML("""
+                <a href="https://huggingface.co/fffiloni">
+                    <img src="https://huggingface.co/datasets/huggingface/badges/resolve/main/follow-me-on-HF-sm-dark.svg" alt="Follow me on HF"> for space updates
+                </a>
+                """)
 
     submit_btn.click(
         fn = process_video,
-        inputs = [input_video, prompt, num_steps],
+        inputs = [input_video, prompt, num_steps, degradation],
         outputs = [output_video]
     )
 
