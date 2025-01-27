@@ -3,6 +3,8 @@ import subprocess
 import shutil
 import os
 
+is_shared_ui = True if "fffiloni/Go-With-The-Flow" in os.environ['SPACE_ID'] else False
+
 from huggingface_hub import snapshot_download
 
 # Define the folder name
@@ -86,8 +88,13 @@ with gr.Blocks(css=css) as demo:
                 input_video = gr.Video(label="Input Video")
                 prompt = gr.Textbox(label="Prompt")
                 with gr.Row():
-                    num_steps = gr.Slider(label="Inference Steps", minimum=1, maximum=30, value=5, step=1)
-                    degradation = gr.Slider(label="Noise Degradation", minimum=0, maximum=1, value=0, step=0.1)
+                    if is_shared_ui:
+                        num_steps = gr.Slider(label="Inference Steps", minimum=1, maximum=30, value=5, step=1, interactive=False)
+                        degradation = gr.Slider(label="Noise Degradation", minimum=0, maximum=1, value=0, step=0.1, interactive=False)
+                    else:
+                        num_steps = gr.Slider(label="Inference Steps", minimum=1, maximum=30, value=5, step=1, interactive=True)
+                        degradation = gr.Slider(label="Noise Degradation", minimum=0, maximum=1, value=0, step=0.1, interactive=True)
+                    
                 submit_btn = gr.Button("Submit")
                 gr.Examples(
                     examples = [
@@ -99,10 +106,12 @@ with gr.Blocks(css=css) as demo:
             with gr.Column():
                 output_video = gr.Video(label="Result")
                 gr.HTML("""
-                <a href="https://huggingface.co/fffiloni">
-                    <img src="https://huggingface.co/datasets/huggingface/badges/resolve/main/follow-me-on-HF-sm-dark.svg" alt="Follow me on HF"> for space updates
-                </a>
-                """, elem_id="follow-div")
+                <div id="follow-div">
+                    <a href="https://huggingface.co/fffiloni">
+                        <img src="https://huggingface.co/datasets/huggingface/badges/resolve/main/follow-me-on-HF-sm-dark.svg" alt="Follow me on HF">
+                    </a>
+                    <p>for space updates</p>
+                """)
 
     submit_btn.click(
         fn = process_video,
