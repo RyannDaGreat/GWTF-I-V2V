@@ -1,5 +1,6 @@
 torch 
 torchvision --index-url https://download.pytorch.org/whl/cu118
+rp
 diffusers==0.32.2
 einops
 easydict
