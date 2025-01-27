@@ -58,7 +58,7 @@ def process_video(video_path, prompt, num_steps, degradation_level):
         
         # Return the path to the output video
         gr.Success("Done!")
-        return output_video, "noise_warp_output_folder.mp4"
+        return output_video
     except subprocess.CalledProcessError as e:
         
         raise gr.Error(f"An error occurred: {str(e)}")
@@ -100,7 +100,7 @@ with gr.Blocks(css=css) as demo:
                         num_steps = gr.Slider(label="Inference Steps", minimum=1, maximum=30, value=5, step=1, interactive=False)
                         degradation = gr.Slider(label="Noise Degradation", minimum=0, maximum=1, value=0.5, step=0.1, interactive=False)
                     else:
-                        num_steps = gr.Slider(label="Inference Steps", minimum=1, maximum=30, value=5, step=1, interactive=True)
+                        num_steps = gr.Slider(label="Inference Steps", minimum=1, maximum=30, value=20, step=1, interactive=True)
                         degradation = gr.Slider(label="Noise Degradation", minimum=0, maximum=1, value=0.5, step=0.1, interactive=True)
                     
                 submit_btn = gr.Button("Submit")
@@ -113,7 +113,7 @@ with gr.Blocks(css=css) as demo:
                 )
             with gr.Column():
                 output_video = gr.Video(label="Result")
-                warp_output_video = gr.Video(label="Warped Noise")
+                
                 gr.HTML("""
                 <div id="follow-div">
                     <a href="https://huggingface.co/fffiloni">
@@ -125,7 +125,7 @@ with gr.Blocks(css=css) as demo:
     submit_btn.click(
         fn = process_video,
         inputs = [input_video, prompt, num_steps, degradation],
-        outputs = [output_video, warp_output_video]
+        outputs = [output_video]
     )
 
 demo.queue().launch(show_api=False)
