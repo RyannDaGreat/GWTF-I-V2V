@@ -98,7 +98,7 @@ with gr.Blocks(css=css) as demo:
                         degradation = gr.Slider(label="Noise Degradation", minimum=0, maximum=1, value=0, step=0.1, interactive=False)
                     else:
                         num_steps = gr.Slider(label="Inference Steps", minimum=1, maximum=30, value=5, step=1, interactive=True)
-                        degradation = gr.Slider(label="Noise Degradation", minimum=0, maximum=1, value=0, step=0.1, interactive=True)
+                        degradation = gr.Slider(label="Noise Degradation", minimum=0, maximum=1, value=0.5, step=0.1, interactive=True)
                     
                 submit_btn = gr.Button("Submit")
                 gr.Examples(
