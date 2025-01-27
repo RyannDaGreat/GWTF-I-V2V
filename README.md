@@ -5,7 +5,7 @@ colorFrom: gray
 colorTo: indigo
 sdk: gradio
 sdk_version: 5.13.1
-app_file: cut_and_drag_gui.py
+app_file: app.py
 pinned: false
 ---
 
