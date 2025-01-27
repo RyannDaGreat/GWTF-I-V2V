@@ -35,6 +35,7 @@ def process_video(video_path, prompt, num_steps, degradation_level):
     
     try:
         # Step 1: Warp the noise
+        gr.Info("Step 1: Warp the noise...")
         warp_command = [
             "python", "make_warped_noise.py", video_path,
             "--output_folder", output_folder
@@ -44,6 +45,7 @@ def process_video(video_path, prompt, num_steps, degradation_level):
         warped_vid_path = os.path.join(output_folder, "input.mp4")
         
         # Step 2: Run inference
+        gr.Info("Step 2: Run inference...")
         inference_command = [
             "python", "cut_and_drag_inference.py", output_folder,
             "--prompt", prompt,
@@ -55,7 +57,8 @@ def process_video(video_path, prompt, num_steps, degradation_level):
         subprocess.run(inference_command, check=True)
         
         # Return the path to the output video
-        return output_video
+        gr.Success("Done!")
+        return output_video, "noise_warp_output_folder.mp4"
     except subprocess.CalledProcessError as e:
         
         raise gr.Error(f"An error occurred: {str(e)}")
@@ -104,12 +107,13 @@ with gr.Blocks(css=css) as demo:
                 gr.Examples(
                     examples = [
                         ["./examples/example_1.mp4", "yellow plastic duck is swimming and jumping in the water"],
-                        ["./examples/example_2.mp4", "the car starts and goes forward to the end of the street"]
+                        ["./examples/example_2.mp4", "a car enters the frame and goes forward to the end of the street"]
                     ], 
                     inputs = [input_video, prompt]
                 )
             with gr.Column():
                 output_video = gr.Video(label="Result")
+                warp_output_video = gr.Video(label="Warped Noise")
                 gr.HTML("""
                 <div id="follow-div">
                     <a href="https://huggingface.co/fffiloni">
@@ -121,7 +125,7 @@ with gr.Blocks(css=css) as demo:
     submit_btn.click(
         fn = process_video,
         inputs = [input_video, prompt, num_steps, degradation],
-        outputs = [output_video]
+        outputs = [output_video, warp_output_video]
     )
 
 demo.queue().launch(show_api=False)
