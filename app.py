@@ -49,4 +49,5 @@ with gr.Blocks() as demo:
         inputs = [input_video, prompt],
         outputs = [output_video]
     )
-                
+
+demo.queue().launch(show_api=False)
