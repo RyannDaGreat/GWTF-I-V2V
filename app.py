@@ -42,7 +42,7 @@ def process_video(video_path, prompt, num_steps, degradation_level):
         inference_command = [
             "python", "cut_and_drag_inference.py", output_folder,
             "--prompt", prompt,
-            "--degradation", degradation_level,
+            "--degradation", str(degradation_level),
             "--output_mp4_path", output_video,
             "--device", device,
             "--num_inference_steps", str(num_steps)
