@@ -16,12 +16,12 @@ snapshot_download(
     local_dir = folder_name
 )
 
-def process_video(video_path, prompt):
+def process_video(video_path, prompt, num_steps):
     
     output_folder="noise_warp_output_folder"
     output_video="output.mp4"
     device="cuda"
-    num_steps=5
+    num_steps=num_steps
     
     try:
         # Step 1: Warp the noise
@@ -54,13 +54,14 @@ with gr.Blocks() as demo:
             with gr.Column():
                 input_video = gr.Video(label="Input Video")
                 prompt = gr.Textbox(label="Prompt")
+                num_steps = gr.Slider(label="Inference Steps", minimum=1, maximum=30, value=5, step=1)
                 submit_btn = gr.Button("Submit")
             with gr.Column():
                 output_video = gr.Video(label="Result")
 
     submit_btn.click(
         fn = process_video,
-        inputs = [input_video, prompt],
+        inputs = [input_video, prompt, num_steps],
         outputs = [output_video]
     )
 
