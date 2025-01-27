@@ -2,6 +2,20 @@ import gradio as gr
 import subprocess
 import os
 
+from huggingface_hub import snapshot_download
+
+# Define the folder name
+folder_name = "lora_models"
+
+# Create the folder
+os.makedirs(folder_name, exist_ok=True)
+
+# Download models
+snapshot_download(
+    repo_id = "Eyeline-Research/Go-with-the-Flow",
+    local_dir = folder_name
+)
+
 def process_video(video_path, prompt):
     
     output_folder="noise_warp_output_folder"
