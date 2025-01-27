@@ -1,5 +1,6 @@
 import gradio as gr
 import subprocess
+import shutil
 import os
 
 from huggingface_hub import snapshot_download
@@ -33,6 +34,8 @@ def process_video(video_path, prompt, num_steps):
             "--output_folder", output_folder
         ]
         subprocess.run(warp_command, check=True)
+
+        warped_vid_path = os.path.join(output_folder, "input.mp4")
         
         # Step 2: Run inference
         inference_command = [
@@ -45,7 +48,7 @@ def process_video(video_path, prompt, num_steps):
         subprocess.run(inference_command, check=True)
         
         # Return the path to the output video
-        return output_video
+        return output_video, warped_vid_path
     except subprocess.CalledProcessError as e:
         
         raise gr.Error(f"An error occurred: {str(e)}")
@@ -61,11 +64,12 @@ with gr.Blocks() as demo:
                 submit_btn = gr.Button("Submit")
             with gr.Column():
                 output_video = gr.Video(label="Result")
+                warped_output_video = gr.Video(label="Warped noise")
 
     submit_btn.click(
         fn = process_video,
         inputs = [input_video, prompt, num_steps],
-        outputs = [output_video]
+        outputs = [output_video, warped_vid_path]
     )
 
 demo.queue().launch(show_api=False)
