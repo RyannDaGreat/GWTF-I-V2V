@@ -48,14 +48,33 @@ def process_video(video_path, prompt, num_steps):
         subprocess.run(inference_command, check=True)
         
         # Return the path to the output video
-        return output_video, warped_vid_path
+        return output_video
     except subprocess.CalledProcessError as e:
         
         raise gr.Error(f"An error occurred: {str(e)}")
 
 with gr.Blocks() as demo:
     with gr.Column():
-        gr.Markdown("# Go-With-The-Flow")
+        gr.Markdown("# Go-With-The-Flow • Cut and Drag")
+        gr.HTML("""
+        <div style="display:flex;column-gap:4px;">
+            <a href="https://github.com/Eyeline-Research/Go-with-the-Flow">
+                <img src='https://img.shields.io/badge/GitHub-Repo-blue'>
+            </a> 
+            <a href="https://arxiv.org/abs/2501.08331">
+                <img src='https://img.shields.io/badge/ArXiv-Paper-red'>
+            </a>
+            <a href="https://eyeline-research.github.io/Go-with-the-Flow/">
+                <img src='https://img.shields.io/badge/Project-Page-green'>
+            </a>
+            <a href="https://huggingface.co/spaces/fffiloni/Go-With-The-Flow?duplicate=true">
+                <img src="https://huggingface.co/datasets/huggingface/badges/resolve/main/duplicate-this-space-sm.svg" alt="Duplicate this Space">
+            </a>
+            <a href="https://huggingface.co/fffiloni">
+                <img src="https://huggingface.co/datasets/huggingface/badges/resolve/main/follow-me-on-HF-sm-dark.svg" alt="Follow me on HF">
+            </a>
+        </div>
+        """)
         with gr.Row():
             with gr.Column():
                 input_video = gr.Video(label="Input Video")
@@ -64,12 +83,11 @@ with gr.Blocks() as demo:
                 submit_btn = gr.Button("Submit")
             with gr.Column():
                 output_video = gr.Video(label="Result")
-                warped_vid_path = gr.Video(label="Warped noise")
 
     submit_btn.click(
         fn = process_video,
         inputs = [input_video, prompt, num_steps],
-        outputs = [output_video, warped_vid_path]
+        outputs = [output_video]
     )
 
 demo.queue().launch(show_api=False)
