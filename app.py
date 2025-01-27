@@ -53,7 +53,16 @@ def process_video(video_path, prompt, num_steps, degradation_level):
         
         raise gr.Error(f"An error occurred: {str(e)}")
 
-with gr.Blocks() as demo:
+css="""
+div#follow-div{
+    text-decoration: none !important;
+    display: flex;
+    column-gap: 5px;
+    font-size: 0.8em;
+}
+"""
+
+with gr.Blocks(css=css) as demo:
     with gr.Column():
         gr.Markdown("# Go-With-The-Flow • Cut and Drag")
         gr.HTML("""
@@ -93,7 +102,7 @@ with gr.Blocks() as demo:
                 <a href="https://huggingface.co/fffiloni">
                     <img src="https://huggingface.co/datasets/huggingface/badges/resolve/main/follow-me-on-HF-sm-dark.svg" alt="Follow me on HF"> for space updates
                 </a>
-                """)
+                """, elem_id="follow-div")
 
     submit_btn.click(
         fn = process_video,
