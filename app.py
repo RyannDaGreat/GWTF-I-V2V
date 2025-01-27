@@ -19,6 +19,9 @@ snapshot_download(
 def process_video(video_path, prompt, num_steps):
     
     output_folder="noise_warp_output_folder"
+    if os.path.exists(output_folder):
+        # Delete the folder and its contents
+        shutil.rmtree(output_folder)
     output_video="output.mp4"
     device="cuda"
     num_steps=num_steps
