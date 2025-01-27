@@ -64,7 +64,7 @@ with gr.Blocks() as demo:
                 submit_btn = gr.Button("Submit")
             with gr.Column():
                 output_video = gr.Video(label="Result")
-                warped_output_video = gr.Video(label="Warped noise")
+                warped_vid_path = gr.Video(label="Warped noise")
 
     submit_btn.click(
         fn = process_video,
