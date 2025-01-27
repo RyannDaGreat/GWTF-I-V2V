@@ -104,7 +104,7 @@ with gr.Blocks(css=css) as demo:
                 gr.Examples(
                     examples = [
                         ["./examples/example_1.mp4", "yellow plastic duck is swimming and jumping in the water"],
-                        ["./examples/example_2.mp4", "the car starts and go forward to the end of the street"]
+                        ["./examples/example_2.mp4", "the car starts and goes forward to the end of the street"]
                     ], 
                     inputs = [input_video, prompt]
                 )
