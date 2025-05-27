@@ -128,4 +128,4 @@ with gr.Blocks(css=css) as demo:
         outputs = [output_video]
     )
 
-demo.queue().launch(show_api=False)
+demo.queue().launch(show_api=True)
