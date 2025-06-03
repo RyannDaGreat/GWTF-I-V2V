@@ -1,0 +1,28 @@
+lora_models
+noise_warp_output_folder
+.gradio
+
+
+#<RP Default Gitignore Start>
+*.pyc
+*.bak
+*.swh
+*.swi
+*.swj
+*.swk
+*.swl
+*.swm
+*.swn
+*.swo
+*.swp
+*.un~
+*.gstmp
+*.ipynb_checkpoints
+*.DS_Store
+#<RP Default Gitignore End>
+
+noise_warp_output_folder.mp4
+output.mp4
+output.mp4_preview.mp4
+output.mp4_preview.mp4.gif
+output.mp4_preview_compressed.mp4

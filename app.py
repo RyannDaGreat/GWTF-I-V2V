@@ -3,7 +3,7 @@ import subprocess
 import shutil
 import os
 
-is_shared_ui = True if "fffiloni/Go-With-The-Flow" in os.environ['SPACE_ID'] else False
+# is_shared_ui = True if "fffiloni/Go-With-The-Flow" in os.environ['SPACE_ID'] else False
 
 from huggingface_hub import snapshot_download
 
@@ -96,12 +96,8 @@ with gr.Blocks(css=css) as demo:
                 input_video = gr.Video(label="Input Video")
                 prompt = gr.Textbox(label="Prompt")
                 with gr.Row():
-                    if is_shared_ui:
-                        num_steps = gr.Slider(label="Inference Steps", minimum=1, maximum=30, value=5, step=1, interactive=False)
-                        degradation = gr.Slider(label="Noise Degradation", minimum=0, maximum=1, value=0.5, step=0.1, interactive=False)
-                    else:
-                        num_steps = gr.Slider(label="Inference Steps", minimum=1, maximum=30, value=20, step=1, interactive=True)
-                        degradation = gr.Slider(label="Noise Degradation", minimum=0, maximum=1, value=0.5, step=0.1, interactive=True)
+                    num_steps = gr.Slider(label="Inference Steps", minimum=1, maximum=50, value=5, step=1, interactive=True)
+                    degradation = gr.Slider(label="Noise Degradation", minimum=0, maximum=1, value=0.5, step=0.1, interactive=True)
                     
                 submit_btn = gr.Button("Submit")
                 gr.Examples(
@@ -128,4 +124,4 @@ with gr.Blocks(css=css) as demo:
         outputs = [output_video]
     )
 
-demo.queue().launch(show_api=True)
+demo.queue().launch(show_api=True,share=True)

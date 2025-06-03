@@ -78,7 +78,7 @@ def get_pipe(model_name, device=None, low_vram=True):
     pipe = PipeClass.from_pretrained(hub_model_id, torch_dtype=torch.bfloat16, vae=vae,transformer=transformer,text_encoder=text_encoder)
 
     if lora_name is not None:
-        lora_folder = rp.make_directory('lora_models')
+        lora_folder = rp.make_directory('/lora_models')
         lora_url = lora_urls[lora_name]
         lora_path = rp.download_url(lora_url, lora_folder, show_progress=True, skip_existing=True)
         assert rp.file_exists(lora_path), (lora_name, lora_path)
@@ -391,7 +391,7 @@ def main(
     degradation=.5,
     model_name='I2V5B_final_i38800_nearest_lora_weights',
 
-    low_vram=True,
+    low_vram=False,
     device:str=None,
     
     #BROADCASTABLE:
