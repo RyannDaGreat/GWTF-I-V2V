@@ -56,14 +56,14 @@ def get_pipe(model_name, device=None, low_vram=True):
         pipe_name = lora_name.split('_')[0]
 
     is_i2v = "I2V" in pipe_name  # This is a convention I'm using right now
-    # is_v2v = "V2V" in pipe_name  # This is a convention I'm using right now
+    is_v2v = "V2V" in pipe_name  # This is a convention I'm using right now
 
-    # if is_v2v:
-    #     old_pipe_name = pipe_name
-    #     old_lora_name = lora_name
-    #     if pipe_name is not None: pipe_name = pipe_name.replace('V2V','T2V')
-    #     if lora_name is not None: lora_name = lora_name.replace('V2V','T2V')
-    #     rp.fansi_print(f"V2V: {old_pipe_name} --> {pipe_name}   &&&   {old_lora_name} --> {lora_name}",'white','bold italic','red')
+    if is_v2v:
+        old_pipe_name = pipe_name
+        old_lora_name = lora_name
+        if pipe_name is not None: pipe_name = pipe_name.replace('V2V','T2V')
+        if lora_name is not None: lora_name = lora_name.replace('V2V','T2V')
+        rp.fansi_print(f"V2V: {old_pipe_name} --> {pipe_name}   &&&   {old_lora_name} --> {lora_name}",'white','bold italic','red')
 
     pipe_id = pipe_ids[pipe_name]
     print(f"LOADING PIPE WITH device={device} pipe_name={pipe_name} pipe_id={pipe_id} lora_name={lora_name}" )
@@ -74,7 +74,7 @@ def get_pipe(model_name, device=None, low_vram=True):
     text_encoder = T5EncoderModel.from_pretrained(hub_model_id, subfolder="text_encoder", torch_dtype=torch.bfloat16)
     vae = AutoencoderKLCogVideoX.from_pretrained(hub_model_id, subfolder="vae", torch_dtype=torch.bfloat16)
 
-    PipeClass = CogVideoXImageToVideoPipeline if is_i2v else CogVideoXPipeline
+    PipeClass = CogVideoXImageToVideoPipeline if is_i2v else (CogVideoXVideoToVideoPipeline if is_v2v else CogVideoXPipeline)
     pipe = PipeClass.from_pretrained(hub_model_id, torch_dtype=torch.bfloat16, vae=vae,transformer=transformer,text_encoder=text_encoder)
 
     if lora_name is not None:
@@ -104,7 +104,7 @@ def get_pipe(model_name, device=None, low_vram=True):
     pipe.lora_name = lora_name
     pipe.pipe_name = pipe_name
     pipe.is_i2v    = is_i2v
-    # pipe.is_v2v    = is_v2v
+    pipe.is_v2v    = is_v2v
     
     return pipe
 
@@ -134,6 +134,7 @@ def load_sample_cartridge(
     #SETTINGS:
     num_inference_steps=30,
     guidance_scale=6,
+    v2v_strength=.5,
 ):
     """
     COMPLETELY FROM SAMPLE: Generate with /root/micromamba/envs/i2sb/lib/python3.8/site-packages/rp/git/CommonSource/notebooks/CogVidSampleGenerator.ipynb
@@ -219,7 +220,7 @@ def load_sample_cartridge(
     else                        : sample_image = rp.as_pil_image(rp.as_rgb_image(image))
 
     metadata = rp.gather_vars('sample_path degradation downtemp_noise sample_gif_path sample_video sample_noise noise_downtemp_interp')
-    settings = rp.gather_vars('num_inference_steps guidance_scale'+0*'v2v_strength')
+    settings = rp.gather_vars('num_inference_steps guidance_scale'+1*' v2v_strength ')
 
     if noise  is None: noise  = downtemp_noise
     if video  is None: video  = sample_video
@@ -322,20 +323,21 @@ def run_pipe(
             image = rp.load_image(image,use_cache=True)
         image = rp.as_pil_image(rp.as_rgb_image(image))
 
-    # if pipe.is_v2v:
-    #     print("Making v2v video...")
-    #     v2v_video=cartridge.video
-    #     v2v_video=rp.as_numpy_images(v2v_video) / 2 + .5
-    #     v2v_video=rp.as_pil_images(v2v_video)
+    if pipe.is_v2v:
+        print("Making v2v video...")
+        v2v_video=cartridge.video
+        v2v_video=rp.as_numpy_images(v2v_video) / 2 + .5
+        v2v_video=rp.as_pil_images(v2v_video)
+        # v2v_video = rp.as_numpy_array(v2v_video)
 
     print("NOISE SHAPE",cartridge.noise.shape)
-    print("IMAGE",image)
+    # print("IMAGE",image)
 
     video = pipe(
         prompt=cartridge.prompt,
         **(dict(image   =image                          ) if pipe.is_i2v else {}),
-        # **(dict(strength=cartridge.settings.v2v_strength) if pipe.is_v2v else {}),
-        # **(dict(video   =v2v_video                      ) if pipe.is_v2v else {}),
+        **(dict(strength=cartridge.settings.v2v_strength) if pipe.is_v2v else {}),
+        **(dict(video   =v2v_video                      ) if pipe.is_v2v else {}),
         num_inference_steps=cartridge.settings.num_inference_steps,
         latents=cartridge.noise,
 
@@ -389,7 +391,8 @@ def main(
     output_mp4_path:str,
     prompt=None,
     degradation=.5,
-    model_name='I2V5B_final_i38800_nearest_lora_weights',
+    # model_name='I2V5B_final_i38800_nearest_lora_weights',
+    model_name='V2V5B_blendnorm_i25000_DATASET_nearest_lora_weights',
 
     low_vram=False,
     device:str=None,
@@ -399,7 +402,7 @@ def main(
     image=None,
     num_inference_steps=30,
     guidance_scale=6,
-    # v2v_strength=.5,#Timestep for when using Vid2Vid. Only set to not none when using a T2V model!
+    v2v_strength=.5,#Timestep for when using Vid2Vid. Only set to not none when using a T2V model!
 ):
     """
     Main function to run the video generation pipeline with specified parameters.
@@ -432,7 +435,7 @@ def main(
             "prompt",
             "num_inference_steps",
             "guidance_scale",
-            # "v2v_strength",
+            "v2v_strength",
         )
     )
 

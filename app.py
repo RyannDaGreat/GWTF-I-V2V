@@ -19,7 +19,7 @@ snapshot_download(
     local_dir = folder_name
 )
 
-def process_video(video_path, prompt, num_steps, degradation_level):
+def process_video(video_path, prompt, num_steps, degradation_level, v2v_strength,):
     
     output_folder="noise_warp_output_folder"
     
@@ -52,7 +52,8 @@ def process_video(video_path, prompt, num_steps, degradation_level):
             "--degradation", str(degradation_level),
             "--output_mp4_path", output_video,
             "--device", device,
-            "--num_inference_steps", str(num_steps)
+            "--num_inference_steps", str(num_steps),
+            "--v2v_strength", str(v2v_strength),
         ]
         subprocess.run(inference_command, check=True)
         
@@ -74,7 +75,7 @@ div#follow-div{
 
 with gr.Blocks(css=css) as demo:
     with gr.Column():
-        gr.Markdown("# Go-With-The-Flow • Cut and Drag")
+        gr.Markdown("# Go-With-The-Flow • V2V SDEdit (T2V Model)")
         gr.HTML("""
         <div style="display:flex;column-gap:4px;">
             <a href="https://github.com/Eyeline-Research/Go-with-the-Flow">
@@ -98,6 +99,7 @@ with gr.Blocks(css=css) as demo:
                 with gr.Row():
                     num_steps = gr.Slider(label="Inference Steps", minimum=1, maximum=50, value=5, step=1, interactive=True)
                     degradation = gr.Slider(label="Noise Degradation", minimum=0, maximum=1, value=0.5, step=0.1, interactive=True)
+                    v2v_strength = gr.Slider(label="V2V Strength (SDEdit)", minimum=0, maximum=1, value=.75, step=.01, interactive=True)
                     
                 submit_btn = gr.Button("Submit")
                 gr.Examples(
@@ -120,7 +122,7 @@ with gr.Blocks(css=css) as demo:
 
     submit_btn.click(
         fn = process_video,
-        inputs = [input_video, prompt, num_steps, degradation],
+        inputs = [input_video, prompt, num_steps, degradation, v2v_strength],
         outputs = [output_video]
     )
 
