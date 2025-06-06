@@ -178,7 +178,7 @@ def retrieve_latents(
         raise AttributeError("Could not access latents of provided encoder_output")
 
 
-class CogVideoXImageVideoToVideoPipeline(DiffusionPipeline, CogVideoXLoraLoaderMixin):
+class CogVideoXIV2VPipeline(DiffusionPipeline, CogVideoXLoraLoaderMixin):
     r"""
     Pipeline for image+video-to-video generation using CogVideoX with SDEdit and first frame conditioning.
 

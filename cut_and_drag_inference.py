@@ -6,7 +6,7 @@ import einops
 from diffusers import CogVideoXImageToVideoPipeline
 from diffusers import CogVideoXVideoToVideoPipeline
 from diffusers import CogVideoXPipeline
-from gwtf_cogvideox_iv2v_pipeline import CogVideoXImageVideoToVideoPipeline
+from gwtf_cogvideox_iv2v_pipeline import CogVideoXIV2VPipeline
 from diffusers.utils import export_to_video, load_image
 from icecream import ic
 from diffusers import AutoencoderKLCogVideoX, CogVideoXImageToVideoPipeline, CogVideoXTransformer3DModel 
@@ -26,6 +26,7 @@ lora_urls = dict(
     I2V5B_final_i30000_lora_weights                          = base_url+'I2V5B_final_i30000_lora_weights.safetensors',
     I2V5B_final_i38800_nearest_lora_weights                  = base_url+'I2V5B_final_i38800_nearest_lora_weights.safetensors',
     I2V5B_resum_blendnorm_0degrad_i13600_DATASET_lora_weights = base_url+'I2V5B_resum_blendnorm_0degrad_i13600_DATASET_lora_weights.safetensors',
+    IV2V5B_final_i38800_nearest_lora_weights                 = base_url+'I2V5B_final_i38800_nearest_lora_weights.safetensors',  # Reuse I2V weights for IV2V
     T2V2B_RDeg_i30000_lora_weights                           = base_url+'T2V2B_RDeg_i30000_lora_weights.safetensors',
     T2V5B_blendnorm_i18000_DATASET_lora_weights               = base_url+'T2V5B_blendnorm_i18000_DATASET_lora_weights.safetensors',
     T2V5B_blendnorm_i25000_DATASET_nearest_lora_weights       = base_url+'T2V5B_blendnorm_i25000_DATASET_nearest_lora_weights.safetensors',
@@ -79,7 +80,7 @@ def get_pipe(model_name, device=None, low_vram=True, force_iv2v=False):
     vae = AutoencoderKLCogVideoX.from_pretrained(hub_model_id, subfolder="vae", torch_dtype=torch.bfloat16)
 
     PipeClass = (CogVideoXImageToVideoPipeline if is_i2v else 
-                 (CogVideoXImageVideoToVideoPipeline if is_iv2v else 
+                 (CogVideoXIV2VPipeline if is_iv2v else 
                  (CogVideoXVideoToVideoPipeline if is_v2v else CogVideoXPipeline)))
     pipe = PipeClass.from_pretrained(hub_model_id, torch_dtype=torch.bfloat16, vae=vae,transformer=transformer,text_encoder=text_encoder)
 
@@ -484,8 +485,8 @@ def main(
     iv2v_detected = image is not None and any(hasattr(cart, 'video') and cart.video is not None for cart in cartridges)
     if iv2v_detected and 'V2V' in model_name:
         original_model = model_name
-        # Switch to I2V model for IV2V functionality
-        model_name = 'I2V5B_final_i38800_nearest_lora_weights'
+        # Switch to IV2V model for IV2V functionality
+        model_name = 'IV2V5B_final_i38800_nearest_lora_weights'
         rp.fansi_print(f"IV2V detected: Switching from {original_model} to {model_name}", 'yellow', 'bold')
 
     pipe = get_pipe(model_name, device, low_vram=low_vram, force_iv2v=iv2v_detected)
