@@ -19,7 +19,7 @@ snapshot_download(
     local_dir = folder_name
 )
 
-def process_video(video_path, prompt, num_steps, degradation_level, v2v_strength,):
+def process_video(image_path, video_path, prompt, num_steps, degradation_level, v2v_strength,):
     
     output_folder="noise_warp_output_folder"
     
@@ -55,6 +55,10 @@ def process_video(video_path, prompt, num_steps, degradation_level, v2v_strength
             "--num_inference_steps", str(num_steps),
             "--v2v_strength", str(v2v_strength),
         ]
+        
+        # Add image parameter if provided
+        if image_path is not None:
+            inference_command.extend(["--image_path", image_path])
         subprocess.run(inference_command, check=True)
         
         # Return the path to the output video
@@ -75,7 +79,7 @@ div#follow-div{
 
 with gr.Blocks(css=css) as demo:
     with gr.Column():
-        gr.Markdown("# Go-With-The-Flow • V2V SDEdit (T2V Model)")
+        gr.Markdown("# Go-With-The-Flow • Image+Video to Video (SDEdit + First Frame)")
         gr.HTML("""
         <div style="display:flex;column-gap:4px;">
             <a href="https://github.com/Eyeline-Research/Go-with-the-Flow">
@@ -94,6 +98,7 @@ with gr.Blocks(css=css) as demo:
         """)
         with gr.Row():
             with gr.Column():
+                input_image = gr.Image(label="Input Image", type="filepath")
                 input_video = gr.Video(label="Input Video")
                 prompt = gr.Textbox(label="Prompt")
                 with gr.Row():
@@ -104,10 +109,10 @@ with gr.Blocks(css=css) as demo:
                 submit_btn = gr.Button("Submit")
                 gr.Examples(
                     examples = [
-                        ["./examples/example_1.mp4", "yellow plastic duck is swimming and jumping in the water"],
-                        ["./examples/example_2.mp4", "a car enters the frame and goes forward to the end of the street"]
+                        [None, "./examples/example_1.mp4", "yellow plastic duck is swimming and jumping in the water"],
+                        [None, "./examples/example_2.mp4", "a car enters the frame and goes forward to the end of the street"]
                     ], 
-                    inputs = [input_video, prompt]
+                    inputs = [input_image, input_video, prompt]
                 )
             with gr.Column():
                 output_video = gr.Video(label="Result")
@@ -122,7 +127,7 @@ with gr.Blocks(css=css) as demo:
 
     submit_btn.click(
         fn = process_video,
-        inputs = [input_video, prompt, num_steps, degradation, v2v_strength],
+        inputs = [input_image, input_video, prompt, num_steps, degradation, v2v_strength],
         outputs = [output_video]
     )
 
