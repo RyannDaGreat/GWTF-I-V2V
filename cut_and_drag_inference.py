@@ -6,6 +6,7 @@ import einops
 from diffusers import CogVideoXImageToVideoPipeline
 from diffusers import CogVideoXVideoToVideoPipeline
 from diffusers import CogVideoXPipeline
+from gwtf_cogvideox_iv2v_pipeline import CogVideoXImageVideoToVideoPipeline
 from diffusers.utils import export_to_video, load_image
 from icecream import ic
 from diffusers import AutoencoderKLCogVideoX, CogVideoXImageToVideoPipeline, CogVideoXTransformer3DModel 
@@ -39,7 +40,7 @@ num_frames=(F-1)*4+1 #https://miro.medium.com/v2/resize:fit:1400/format:webp/0*z
 assert num_frames==49
 
 @rp.memoized #Torch never manages to unload it from memory anyway
-def get_pipe(model_name, device=None, low_vram=True):
+def get_pipe(model_name, device=None, low_vram=True, force_iv2v=False):
     """
     model_name is like "I2V5B", "T2V2B", or "T2V5B", or a LoRA name like "T2V2B_RDeg_i30000_lora_weights"
     device is automatically selected if unspecified
@@ -57,13 +58,16 @@ def get_pipe(model_name, device=None, low_vram=True):
 
     is_i2v = "I2V" in pipe_name  # This is a convention I'm using right now
     is_v2v = "V2V" in pipe_name  # This is a convention I'm using right now
+    is_iv2v = "IV2V" in pipe_name or force_iv2v  # This is for Image+Video to Video
 
-    if is_v2v:
+    if is_v2v or is_iv2v:
         old_pipe_name = pipe_name
         old_lora_name = lora_name
-        if pipe_name is not None: pipe_name = pipe_name.replace('V2V','T2V')
-        if lora_name is not None: lora_name = lora_name.replace('V2V','T2V')
-        rp.fansi_print(f"V2V: {old_pipe_name} --> {pipe_name}   &&&   {old_lora_name} --> {lora_name}",'white','bold italic','red')
+        if pipe_name is not None: 
+            pipe_name = pipe_name.replace('V2V','T2V').replace('IV2V','T2V')
+        if lora_name is not None: 
+            lora_name = lora_name.replace('V2V','T2V').replace('IV2V','T2V')
+        rp.fansi_print(f"V2V/IV2V: {old_pipe_name} --> {pipe_name}   &&&   {old_lora_name} --> {lora_name}",'white','bold italic','red')
 
     pipe_id = pipe_ids[pipe_name]
     print(f"LOADING PIPE WITH device={device} pipe_name={pipe_name} pipe_id={pipe_id} lora_name={lora_name}" )
@@ -74,7 +78,9 @@ def get_pipe(model_name, device=None, low_vram=True):
     text_encoder = T5EncoderModel.from_pretrained(hub_model_id, subfolder="text_encoder", torch_dtype=torch.bfloat16)
     vae = AutoencoderKLCogVideoX.from_pretrained(hub_model_id, subfolder="vae", torch_dtype=torch.bfloat16)
 
-    PipeClass = CogVideoXImageToVideoPipeline if is_i2v else (CogVideoXVideoToVideoPipeline if is_v2v else CogVideoXPipeline)
+    PipeClass = (CogVideoXImageToVideoPipeline if is_i2v else 
+                 (CogVideoXImageVideoToVideoPipeline if is_iv2v else 
+                 (CogVideoXVideoToVideoPipeline if is_v2v else CogVideoXPipeline)))
     pipe = PipeClass.from_pretrained(hub_model_id, torch_dtype=torch.bfloat16, vae=vae,transformer=transformer,text_encoder=text_encoder)
 
     if lora_name is not None:
@@ -105,6 +111,7 @@ def get_pipe(model_name, device=None, low_vram=True):
     pipe.pipe_name = pipe_name
     pipe.is_i2v    = is_i2v
     pipe.is_v2v    = is_v2v
+    pipe.is_iv2v   = is_iv2v
     
     return pipe
 
@@ -317,14 +324,19 @@ def run_pipe(
     if rp.file_exists(output_mp4_path):
         raise RuntimeError("{output_mp4_path} already exists! Please choose a different output file or delete that one. This script is designed not to clobber previous results.")
     
-    if pipe.is_i2v:
+    # Check if we have both image and video for IV2V
+    has_image = cartridge.image is not None
+    has_video = hasattr(cartridge, 'video') and cartridge.video is not None
+    use_iv2v = has_image and has_video
+
+    if pipe.is_i2v or use_iv2v:
         image = cartridge.image
         if isinstance(image, str):
             image = rp.load_image(image,use_cache=True)
         image = rp.as_pil_image(rp.as_rgb_image(image))
 
-    if pipe.is_v2v:
-        print("Making v2v video...")
+    if pipe.is_v2v or use_iv2v:
+        print("Making v2v video..." if not use_iv2v else "Making iv2v video (image+video)...")
         v2v_video=cartridge.video
         v2v_video=rp.as_numpy_images(v2v_video) / 2 + .5
         v2v_video=rp.as_pil_images(v2v_video)
@@ -333,17 +345,30 @@ def run_pipe(
     print("NOISE SHAPE",cartridge.noise.shape)
     # print("IMAGE",image)
 
-    video = pipe(
-        prompt=cartridge.prompt,
-        **(dict(image   =image                          ) if pipe.is_i2v else {}),
-        **(dict(strength=cartridge.settings.v2v_strength) if pipe.is_v2v else {}),
-        **(dict(video   =v2v_video                      ) if pipe.is_v2v else {}),
-        num_inference_steps=cartridge.settings.num_inference_steps,
-        latents=cartridge.noise,
-
-        guidance_scale=cartridge.settings.guidance_scale,
-        # generator=torch.Generator(device=device).manual_seed(42),
-    ).frames[0]
+    if use_iv2v:
+        # Use IV2V pipeline with both image and video
+        video = pipe(
+            image=image,
+            video=v2v_video,
+            prompt=cartridge.prompt,
+            strength=cartridge.settings.v2v_strength,
+            num_inference_steps=cartridge.settings.num_inference_steps,
+            latents=cartridge.noise,
+            guidance_scale=cartridge.settings.guidance_scale,
+            # generator=torch.Generator(device=device).manual_seed(42),
+        ).frames[0]
+    else:
+        # Use original logic for I2V, V2V, or T2V
+        video = pipe(
+            prompt=cartridge.prompt,
+            **(dict(image   =image                          ) if pipe.is_i2v else {}),
+            **(dict(strength=cartridge.settings.v2v_strength) if pipe.is_v2v else {}),
+            **(dict(video   =v2v_video                      ) if pipe.is_v2v else {}),
+            num_inference_steps=cartridge.settings.num_inference_steps,
+            latents=cartridge.noise,
+            guidance_scale=cartridge.settings.guidance_scale,
+            # generator=torch.Generator(device=device).manual_seed(42),
+        ).frames[0]
 
     export_to_video(video, output_mp4_path, fps=8)
 
@@ -455,7 +480,15 @@ def main(
     # cartridges = [load_sample_cartridge(**x) for x in cartridge_kwargs]
     cartridges = rp.load_files(lambda x:load_sample_cartridge(**x), cartridge_kwargs, show_progress='eta:Loading Cartridges')
 
-    pipe = get_pipe(model_name, device, low_vram=low_vram)
+    # Auto-switch to I2V model if both image and video are provided (IV2V case)
+    iv2v_detected = image is not None and any(hasattr(cart, 'video') and cart.video is not None for cart in cartridges)
+    if iv2v_detected and 'V2V' in model_name:
+        original_model = model_name
+        # Switch to I2V model for IV2V functionality
+        model_name = 'I2V5B_final_i38800_nearest_lora_weights'
+        rp.fansi_print(f"IV2V detected: Switching from {original_model} to {model_name}", 'yellow', 'bold')
+
+    pipe = get_pipe(model_name, device, low_vram=low_vram, force_iv2v=iv2v_detected)
 
     output=[]
     for cartridge in cartridges:

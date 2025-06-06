@@ -58,7 +58,7 @@ def process_video(image_path, video_path, prompt, num_steps, degradation_level, 
         
         # Add image parameter if provided
         if image_path is not None:
-            inference_command.extend(["--image_path", image_path])
+            inference_command.extend(["--image", image_path])
         subprocess.run(inference_command, check=True)
         
         # Return the path to the output video
