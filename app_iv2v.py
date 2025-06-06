@@ -54,13 +54,8 @@ def process_video(image_path, video_path, prompt, num_steps, degradation_level, 
             "--device", device,
             "--num_inference_steps", str(num_steps),
             "--v2v_strength", str(v2v_strength),
+            "--model_name", "IV2V5B_final_i38800_nearest_lora_weights"
         ]
-        
-        # Add image parameter and use I2V model for IV2V if provided
-        if image_path is not None:
-            inference_command.extend(["--image", image_path])
-            # Use IV2V model for Image+Video to Video functionality
-            inference_command.extend(["--model_name", "IV2V5B_final_i38800_nearest_lora_weights"])
         subprocess.run(inference_command, check=True)
         
         # Return the path to the output video
